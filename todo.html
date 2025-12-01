@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ToDo</title>
+    <link rel="stylesheet" href="todo.css">
+</head>
+<body>
+    <header>
+        <h1>タスク管理</h1>
+    </header>
+    
+    <div class="board">
+        <!-- 急ぎ案件 -->
+        <div class="column" id="col-urgent">
+            <div class="column-header" style="background-color: #2c5e4f;">
+                <span class="status-icon">●</span> 急ぎ案件
+                <button class="add-btn" onclick="openModal(this)">＋</button>
+            </div>
+
+
+            
+            <div class="task-list">
+                
+                <div class="card" data-date="2025-12-10">
+                    <div class="card-title">面接対策</div>
+                    <div class="card-date">📅 2025-12-10</div>
+                    <div class="progress-container">
+                        <div class="progress-label">進捗</div>
+                        <div class="progress-steps">
+                            <div class="step" onclick="changeProgress(this, 1)"></div>
+                            <div class="step" onclick="changeProgress(this, 2)"></div>
+                            <div class="step" onclick="changeProgress(this, 3)"></div>
+                            <div class="step" onclick="changeProgress(this, 4)"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="notify-area">
+        <div class="notify-header">
+            <span>🔔 今日のタスク通知</span>
+            <label class="toggle-switch">
+                <input type="checkbox" id="notifyToggle" onchange="toggleNotification()">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div class="notify-email-box" id="emailBox" style="display: none;">
+            <input type="email" id="notifyEmail" placeholder="メールアドレスを入力" onchange="saveEmail()">
+            <div class="notify-info">※ONにすると毎日自動送信されます(想定)</div>
+        </div>
+        </div>
+
+
+            
+        </div>
+
+
+
+        <!-- 今週中 -->
+        <div class="column" id="col-weekly">
+            <div class="column-header" style="background-color: #274b69;">
+                <span class="status-icon">●</span> 今週中
+                <button class="add-btn" onclick="openModal(this)">＋</button>
+            </div>
+            <div class="task-list"></div>
+        </div>
+
+        <!-- Todo -->
+        <div class="column" id="col-todo">
+            <div class="column-header" style="background-color: #5a4f38;">
+                <span class="status-icon">●</span> Todo
+                <button class="add-btn" onclick="openModal(this)">＋</button>
+            </div>
+            <div class="task-list"></div>
+        </div>
+    </div>
+
+    <!-- ▼▼▼ 新しく追加：入力用ダイアログ ▼▼▼ -->
+    <dialog id="taskDialog">
+        <form method="dialog">
+            <h3>新規タスク</h3>
+            
+            <label>タイトル</label>
+            <input type="text" id="inputTitle" placeholder="例：Java課題" required>
+            
+            <label>期日</label>
+            <!-- ここが重要：カレンダー入力になります -->
+            <input type="date" id="inputDate" required>
+            
+            <div class="dialog-buttons">
+                <!-- value="cancel"で閉じます -->
+                <button value="cancel" class="cancel-btn">キャンセル</button>
+                <!-- id="confirmBtn" でJSから制御します -->
+                <button type="button" id="confirmBtn" class="confirm-btn">追加</button>
+            </div>
+        </form>
+    </dialog>
+
+    <script src="todo.js"></script>
+</body>
+</html>
