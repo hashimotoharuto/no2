@@ -7,6 +7,8 @@ const inputTitle = document.getElementById('inputTitle');
 const inputDate = document.getElementById('inputDate');
 const confirmBtn = document.getElementById('confirmBtn');
 
+//キャンセルボタンの取得
+const cancelBtn = document.getElementById('cancelBtn');
 /**
  * モーダルを開く処理
  * @param {HTMLElement} btnElement - 押された＋ボタン
@@ -22,6 +24,10 @@ function openModal(btnElement) {
     // ダイアログを表示
     dialog.showModal();
 }
+
+cancelBtn.addEventListener('click', () => {
+    dialog.close();
+});
 
 // 「追加」ボタンが押されたときの処理
 confirmBtn.addEventListener('click', () => {
@@ -96,7 +102,7 @@ function changeProgress(clickedElement, level) {
 }
 
 
-/* --- 以下、script.jsの一番下に追加 --- */
+
 
 const notifyToggle = document.getElementById('notifyToggle');
 const emailBox = document.getElementById('emailBox');
