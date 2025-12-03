@@ -278,3 +278,29 @@ function checkAndSendNotification() {
         console.log(`今日のタスクがあります: ${dueTasks.join(',')}`);
     }
 }
+
+let unsubscribe = null; // 監視を解除するための関数を入れる箱
+
+async function loadTasksFromDB() {
+    // すでに監視中なら、いったん解除する（これが多重起動防止のカギ）
+    if (unsubscribe) {
+        unsubscribe();
+    }
+
+    const q = query(collection(db, "tasks"), where("uid", "==", currentUser.uid));
+    
+    // onSnapshotの結果（解除関数）を変数に保存
+    unsubscribe = onSnapshot(q, (snapshot) => {
+        // 全リストをクリア
+        document.querySelectorAll('.task-list').forEach(list => list.innerHTML = '');
+
+        snapshot.forEach((doc) => {
+            const data = doc.data();
+            addTaskToHTML(data.columnId, data.title, data.date, doc.id);
+        });
+        
+        if(localStorage.getItem('isNotifyOn') === 'true'){
+            checkAndSendNotification(); 
+        }
+    });
+}
