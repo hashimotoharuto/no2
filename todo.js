@@ -12,80 +12,83 @@ const firebaseConfig = {
   measurementId: "G-N9WWWYL65Z"
 };
 
-
-
 // Firebaseの初期化
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 let currentUser = null; // 現在ログインしているユーザー情報
 
-//ログイン機能
+// 監視解除用の関数を入れておく変数（重複防止用）
+let unsubscribe = null;
+
+// --- ログイン・ログアウト機能 ---
 const loginBtn = document.getElementById('loginBtn');
 const logoutBtn = document.getElementById('logoutBtn');
 const userInfo = document.getElementById('userInfo');
 const userName = document.getElementById('userName');
 
 // ログイン処理
-loginBtn.addEventListener('click', () => {
-    const provider = new GoogleAuthProvider();
-    signInWithPopup(auth, provider)
-        .then((result) => {
-            console.log("ログイン成功:", result.user.displayName);
-        }).catch((error) => {
-            console.error("ログインエラー:", error);
-        });
-});
-
+if (loginBtn) {
+    loginBtn.addEventListener('click', () => {
+        const provider = new GoogleAuthProvider();
+        signInWithPopup(auth, provider)
+            .then((result) => {
+                console.log("ログイン成功:", result.user.displayName);
+            }).catch((error) => {
+                console.error("ログインエラー:", error);
+            });
+    });
+}
 
 // ログアウト処理
-logoutBtn.addEventListener('click', () => {
-    signOut(auth).then(() => {
-        alert("ログアウトしました");
-        location.reload(); // 画面リロードして表示をクリア
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+        signOut(auth).then(() => {
+            alert("ログアウトしました");
+            location.reload(); 
+        });
     });
-});
+}
 
-// ログイン状態の監視（ページを開いた時に自動でチェック）
+// ログイン状態の監視
 onAuthStateChanged(auth, (user) => {
     if (user) {
-        // ログインしている時
+        // ログイン時
         currentUser = user;
-        loginBtn.style.display = 'none';
-        userInfo.style.display = 'block';
-        userName.textContent = user.displayName + " さん";
+        if(loginBtn) loginBtn.style.display = 'none';
+        if(userInfo) userInfo.style.display = 'block';
+        if(userName) userName.textContent = user.displayName + " さん";
         
-        // ★データベースからタスクを読み込む
+        // データベースからタスクを読み込む
         loadTasksFromDB();
     } else {
-        // ログアウトしている時
+        // ログアウト時
         currentUser = null;
-        loginBtn.style.display = 'block';
-        userInfo.style.display = 'none';
-        // タスクリストを空にするなどの処理が必要ならここに書く
+        if(loginBtn) loginBtn.style.display = 'block';
+        if(userInfo) userInfo.style.display = 'none';
+        
+        // 監視を解除してリストを空にする
+        if (unsubscribe) {
+            unsubscribe();
+            unsubscribe = null;
+        }
+        document.querySelectorAll('.task-list').forEach(list => list.innerHTML = '');
     }
 });
 
-// HTMLのonclickで呼べるように window オブジェクトに紐付ける
+// HTMLから呼べるようにwindowに紐付け
 window.openModal = openModal;
 window.changeProgress = changeProgress;
 window.toggleNotification = toggleNotification;
 window.saveEmail = saveEmail;
 
-
-
-// どのカラムのボタンが押されたかを記録する変数
+// --- 変数定義 ---
 let currentColumn = null;
-
-// ダイアログ要素を取得
 const dialog = document.getElementById('taskDialog');
 const inputTitle = document.getElementById('inputTitle');
 const inputDate = document.getElementById('inputDate');
 const confirmBtn = document.getElementById('confirmBtn');
-//キャンセルボタンの取得
 const cancelBtn = document.getElementById('cancelBtn');
-
-
 
 function openModal(btnElement) {
     if (!currentUser) {
@@ -98,53 +101,55 @@ function openModal(btnElement) {
     dialog.showModal();
 }
 
-cancelBtn.addEventListener('click', () => {
-    dialog.close();
-});
-
-// 「追加」ボタンが押されたとき（データベース保存）
-confirmBtn.addEventListener('click', async () => {
-    const title = inputTitle.value;
-    const date = inputDate.value;
-
-    if (!title || !date) {
-        alert("タイトルと期日を入力してください");
-        return;
-    }
-
-    // どのカラムに追加するかIDで判定
-    let columnId = currentColumn.id; // "col-urgent" など
-
-    try {
-        // ★Firestoreにデータを保存
-        const docRef = await addDoc(collection(db, "tasks"), {
-            uid: currentUser.uid,    // 誰のタスクか
-            title: title,
-            date: date,
-            columnId: columnId,      // どの列にあるか
-            createdAt: new Date()
-        });
-        
-        console.log("タスク保存完了 ID: ", docRef.id);
-
-        
-        
+if (cancelBtn) {
+    cancelBtn.addEventListener('click', () => {
         dialog.close();
-    } catch (e) {
-        console.error("エラー:", e);
-        alert("保存に失敗しました");
-    }
-});
+    });
+}
 
-// データベースから読み込んで画面に表示する関数
+// 「追加」ボタン処理
+if (confirmBtn) {
+    confirmBtn.addEventListener('click', async () => {
+        const title = inputTitle.value;
+        const date = inputDate.value;
+
+        if (!title || !date) {
+            alert("タイトルと期日を入力してください");
+            return;
+        }
+
+        let columnId = currentColumn.id; 
+
+        try {
+            // Firestoreに保存（画面への追加はonSnapshotに任せる）
+            const docRef = await addDoc(collection(db, "tasks"), {
+                uid: currentUser.uid,
+                title: title,
+                date: date,
+                columnId: columnId,
+                createdAt: new Date()
+            });
+            console.log("タスク保存完了 ID: ", docRef.id);
+            dialog.close();
+        } catch (e) {
+            console.error("エラー:", e);
+            alert("保存に失敗しました");
+        }
+    });
+}
+
+// データベースから読み込み（重複防止版）
 async function loadTasksFromDB() {
-    // 自分のタスクだけを取得
+    // すでに監視中なら、いったん解除する（これが重要！）
+    if (unsubscribe) {
+        unsubscribe();
+    }
+
     const q = query(collection(db, "tasks"), where("uid", "==", currentUser.uid));
     
-    // リアルタイム同期（DBが変わると画面も勝手に変わる）
-    onSnapshot(q, (snapshot) => {
-        // 一旦リストをクリアするのは大変なので、簡易的に「読み込み直す」実装例
-        // ※本来は変更差分だけ更新しますが、今回はシンプルに全消し＆再描画します
+    // リアルタイム同期を開始し、解除関数を変数に保存
+    unsubscribe = onSnapshot(q, (snapshot) => {
+        // リストを全クリア
         document.querySelectorAll('.task-list').forEach(list => list.innerHTML = '');
 
         snapshot.forEach((doc) => {
@@ -152,21 +157,20 @@ async function loadTasksFromDB() {
             addTaskToHTML(data.columnId, data.title, data.date, doc.id);
         });
         
-        // 通知チェック機能もここで呼ぶと良い
+        // 通知チェック
         if(localStorage.getItem('isNotifyOn') === 'true'){
             checkAndSendNotification(); 
         }
     });
 }
 
-// 画面にカードを追加する関数（DB保存はしない、表示のみ）
+// 画面表示用関数
 function addTaskToHTML(columnId, title, date, docId) {
     const columnElement = document.getElementById(columnId);
     if (!columnElement) return;
     
     const taskList = columnElement.querySelector('.task-list');
 
-    // data-id属性にDBのドキュメントIDを持たせておく（削除用）
     const newCardHTML = `
         <div class="card" data-date="${date}" data-id="${docId}">
             <div class="card-title">${title}</div>
@@ -185,7 +189,7 @@ function addTaskToHTML(columnId, title, date, docId) {
     taskList.insertAdjacentHTML('beforeend', newCardHTML);
 }
 
-// 進捗変更・削除処理
+// 進捗・削除処理
 async function changeProgress(clickedElement, level) {
     const parent = clickedElement.parentElement;
     const steps = parent.querySelectorAll('.step');
@@ -198,20 +202,16 @@ async function changeProgress(clickedElement, level) {
         }
     });
 
-    // レベル4（完了）になったら削除
     if (level === 4) {
         const card = clickedElement.closest('.card');
-        const docId = card.getAttribute('data-id'); // HTMLからIDを取得
+        const docId = card.getAttribute('data-id');
 
         if (confirm("タスクを完了して削除しますか？")) {
             try {
-                // ★Firestoreから削除
                 await deleteDoc(doc(db, "tasks", docId));
                 console.log("DBから削除しました");
-                
-                // 画面のアニメーション
-                card.classList.add('fade-out');
-                setTimeout(() => { card.remove(); }, 500);
+                // 削除のアニメーション等はonSnapshotで画面更新されるのでそのままでも消えますが、
+                // 即時フィードバックとしてCSSアニメーションだけ適用してもOK
             } catch (e) {
                 console.error("削除エラー", e);
                 alert("削除に失敗しました");
@@ -220,7 +220,7 @@ async function changeProgress(clickedElement, level) {
     }
 }
 
-// ▼▼▼ 4. 通知機能（元のコードを維持） ▼▼▼
+// --- 通知機能 ---
 const notifyToggle = document.getElementById('notifyToggle');
 const emailBox = document.getElementById('emailBox');
 const notifyEmail = document.getElementById('notifyEmail');
@@ -234,7 +234,7 @@ window.addEventListener('load', () => {
 });
 
 function toggleNotification() {
-    const isOn = notifyToggle.checked;
+    const isOn = notifyToggle ? notifyToggle.checked : false;
     localStorage.setItem('isNotifyOn', isOn);
     toggleNotificationUI(isOn);
     if (isOn) {
@@ -249,7 +249,7 @@ function toggleNotificationUI(isOn) {
 }
 
 function saveEmail() {
-    localStorage.setItem('notifyEmail', notifyEmail.value);
+    if(notifyEmail) localStorage.setItem('notifyEmail', notifyEmail.value);
 }
 
 function checkAndSendNotification() {
@@ -271,36 +271,7 @@ function checkAndSendNotification() {
     });
 
     const email = notifyEmail ? notifyEmail.value : "";
-    
-    // 通知済みフラグなどを管理しないとリロードのたびに出るので注意
-    // ここでは簡易的にコンソールのみ
     if (dueTasks.length > 0 && email) {
         console.log(`今日のタスクがあります: ${dueTasks.join(',')}`);
     }
-}
-
-let unsubscribe = null; // 監視を解除するための関数を入れる箱
-
-async function loadTasksFromDB() {
-    // すでに監視中なら、いったん解除する（これが多重起動防止のカギ）
-    if (unsubscribe) {
-        unsubscribe();
-    }
-
-    const q = query(collection(db, "tasks"), where("uid", "==", currentUser.uid));
-    
-    // onSnapshotの結果（解除関数）を変数に保存
-    unsubscribe = onSnapshot(q, (snapshot) => {
-        // 全リストをクリア
-        document.querySelectorAll('.task-list').forEach(list => list.innerHTML = '');
-
-        snapshot.forEach((doc) => {
-            const data = doc.data();
-            addTaskToHTML(data.columnId, data.title, data.date, doc.id);
-        });
-        
-        if(localStorage.getItem('isNotifyOn') === 'true'){
-            checkAndSendNotification(); 
-        }
-    });
 }
