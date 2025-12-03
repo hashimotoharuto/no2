@@ -85,7 +85,7 @@
         </div>
     </div>
 
-    <!-- ▼▼▼ 新しく追加：入力用ダイアログ ▼▼▼ -->
+    <!--入力用ダイアログ-->
     <dialog id="taskDialog">
         <form method="dialog">
             <h3>新規タスク</h3>
@@ -94,18 +94,18 @@
             <input type="text" id="inputTitle" placeholder="例：Java課題" required>
             
             <label>期日</label>
-            <!-- ここが重要：カレンダー入力になります -->
+            <!-- カレンダー入力 -->
             <input type="date" id="inputDate" required>
             
             <div class="dialog-buttons">
-                <!-- value="cancel"で閉じます -->
+                <!-- value="cancel"で閉じる -->
                 <button type="button" id="cancelBtn" class="cancel-btn">キャンセル</button>
-                <!-- id="confirmBtn" でJSから制御します -->
+                <!-- id="confirmBtn" でJSから制御 -->
                 <button type="button" id="confirmBtn" class="confirm-btn">追加</button>
             </div>
         </form>
     </dialog>
 
-    <script type="module" src="todo.js"></script>
+    <script type="module" src="todo.js?v=2"></script>
 </body>
 </html>
