@@ -127,8 +127,7 @@ confirmBtn.addEventListener('click', async () => {
         
         console.log("タスク保存完了 ID: ", docRef.id);
 
-        // 画面にも追加（IDを渡す）
-        addTaskToHTML(columnId, title, date, docRef.id);
+        
         
         dialog.close();
     } catch (e) {
