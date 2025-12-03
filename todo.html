@@ -9,6 +9,14 @@
 <body>
     <header>
         <h1>タスク管理</h1>
+
+         <div id="auth-container" style="position: absolute; top: 20px; right: 20px;">
+            <button id="loginBtn" style="padding: 8px;">Googleでログイン</button>
+            <div id="userInfo" style="display: none;">
+                <span id="userName"></span>
+                <button id="logoutBtn" style="margin-left: 10px;">ログアウト</button>
+            </div>
+        </div>
     </header>
     
     <div class="board">
@@ -98,6 +106,6 @@
         </form>
     </dialog>
 
-    <script src="todo.js"></script>
+    <script type="module" src="todo.js"></script>
 </body>
 </html>
